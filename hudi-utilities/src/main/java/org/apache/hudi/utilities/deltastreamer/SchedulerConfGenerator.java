@@ -77,10 +77,17 @@ public class SchedulerConfGenerator {
    */
   public static Map<String, String> getSparkSchedulingConfigs(HoodieDeltaStreamer.Config cfg) throws Exception {
     scala.Option<String> scheduleModeKeyOption = new SparkConf().getOption(SPARK_SCHEDULER_MODE_KEY);
+    //docker demo中的例子，这边Option是空的
     final Option<String> sparkSchedulerMode =
         scheduleModeKeyOption.isDefined() ? Option.of(scheduleModeKeyOption.get()) : Option.empty();
 
     Map<String, String> additionalSparkConfigs = new HashMap<>(1);
+    //满足以下的条件：
+    //1. scheduler mode 是 fair
+    //2. continuous mode
+    //3. MOR table
+    //那么做如下的操作：
+    //生成一个xml配置文件，返回文件的地址：spark.scheduler.allocation.file->path
     if (sparkSchedulerMode.isPresent() && SPARK_SCHEDULER_FAIR_MODE.equals(sparkSchedulerMode.get())
         && cfg.continuousMode && cfg.tableType.equals(HoodieTableType.MERGE_ON_READ.name())) {
       String sparkSchedulingConfFile = generateAndStoreConfig(cfg.deltaSyncSchedulingWeight,
@@ -95,6 +102,8 @@ public class SchedulerConfGenerator {
 
   /**
    * Generate spark scheduling configs and store it to a randomly generated tmp file.
+   *
+   * 生成一个文件，填充配置，返回文件地址
    *
    * @param deltaSyncWeight Scheduling weight for delta sync
    * @param compactionWeight Scheduling weight for compaction

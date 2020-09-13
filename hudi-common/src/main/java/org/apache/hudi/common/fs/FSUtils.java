@@ -46,7 +46,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -90,8 +89,10 @@ public class FSUtils {
 
   public static FileSystem getFs(String path, Configuration conf) {
     FileSystem fs;
+    //配置HDFS和本地文件系统的实现类，用hadoop自带的实现类
     prepareHadoopConf(conf);
     try {
+      //获取文件系统
       fs = new Path(path).getFileSystem(conf);
     } catch (IOException e) {
       throw new HoodieIOException("Failed to get instance of " + FileSystem.class.getName(), e);

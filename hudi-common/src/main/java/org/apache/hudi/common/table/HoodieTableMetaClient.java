@@ -388,6 +388,8 @@ public class HoodieTableMetaClient implements Serializable {
       properties.put(HoodieTableConfig.HOODIE_BOOTSTRAP_BASE_PATH, bootstrapBasePath);
     }
 
+    //直接调用就可以了，可以用 initTableAndGetMetaClient(hadoopConf, basePath, properties)
+    //TODO 可以把properties作为成员变量保存下来，这样就不用每次都传来传去了
     return HoodieTableMetaClient.initTableAndGetMetaClient(hadoopConf, basePath, properties);
   }
 
@@ -404,12 +406,14 @@ public class HoodieTableMetaClient implements Serializable {
     if (!fs.exists(basePathDir)) {
       fs.mkdirs(basePathDir);
     }
+    //创建 .hoodie文件夹
     Path metaPathDir = new Path(basePath, METAFOLDER_NAME);
     if (!fs.exists(metaPathDir)) {
       fs.mkdirs(metaPathDir);
     }
 
     // if anything other than default archive log folder is specified, create that too
+    // 默认archiveLog文件夹为空
     String archiveLogPropVal = props.getProperty(HoodieTableConfig.HOODIE_ARCHIVELOG_FOLDER_PROP_NAME,
         HoodieTableConfig.DEFAULT_ARCHIVELOG_FOLDER);
     if (!archiveLogPropVal.equals(HoodieTableConfig.DEFAULT_ARCHIVELOG_FOLDER)) {
@@ -420,21 +424,26 @@ public class HoodieTableMetaClient implements Serializable {
     }
 
     // Always create temporaryFolder which is needed for finalizeWrite for Hoodie tables
+    // 创建.temp文件夹
     final Path temporaryFolder = new Path(basePath, HoodieTableMetaClient.TEMPFOLDER_NAME);
     if (!fs.exists(temporaryFolder)) {
       fs.mkdirs(temporaryFolder);
     }
 
     // Always create auxiliary folder which is needed to track compaction workloads (stats and any metadata in future)
+    //创建.aux辅助文件夹
     final Path auxiliaryFolder = new Path(basePath, HoodieTableMetaClient.AUXILIARYFOLDER_NAME);
     if (!fs.exists(auxiliaryFolder)) {
       fs.mkdirs(auxiliaryFolder);
     }
 
+    //创建.bootstrap文件夹下面的子文件夹
     initializeBootstrapDirsIfNotExists(hadoopConf, basePath, fs);
+    //这个时候创建HoodieTableConfig这个步骤在代码上并没有和前面的步骤有什么联系
     HoodieTableConfig.createHoodieProperties(fs, metaPathDir, props);
     // We should not use fs.getConf as this might be different from the original configuration
     // used to create the fs in unit tests
+    // 主代码的逻辑不应该受到UT的影响
     HoodieTableMetaClient metaClient = new HoodieTableMetaClient(hadoopConf, basePath);
     LOG.info("Finished initializing Table of type " + metaClient.getTableConfig().getTableType() + " from " + basePath);
     return metaClient;
@@ -444,14 +453,15 @@ public class HoodieTableMetaClient implements Serializable {
       String basePath, FileSystem fs) throws IOException {
 
     // Create bootstrap index by partition folder if it does not exist
+    //创建.aux/.bootstrap/.partitions
     final Path bootstrap_index_folder_by_partition =
         new Path(basePath, HoodieTableMetaClient.BOOTSTRAP_INDEX_BY_PARTITION_FOLDER_PATH);
     if (!fs.exists(bootstrap_index_folder_by_partition)) {
       fs.mkdirs(bootstrap_index_folder_by_partition);
     }
 
-
     // Create bootstrap index by partition folder if it does not exist
+    //创建.aux/.bootstrap/.fileids
     final Path bootstrap_index_folder_by_fileids =
         new Path(basePath, HoodieTableMetaClient.BOOTSTRAP_INDEX_BY_FILE_ID_FOLDER_PATH);
     if (!fs.exists(bootstrap_index_folder_by_fileids)) {

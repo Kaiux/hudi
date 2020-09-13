@@ -34,12 +34,12 @@ import org.apache.hudi.common.table.timeline.HoodieTimeline;
 import org.apache.hudi.common.util.CompactionUtils;
 import org.apache.hudi.common.util.Option;
 import org.apache.hudi.common.util.ValidationUtils;
-import org.apache.hudi.utilities.IdentitySplitter;
 import org.apache.hudi.common.util.collection.Pair;
 import org.apache.hudi.exception.HoodieException;
 import org.apache.hudi.exception.HoodieIOException;
 import org.apache.hudi.hive.HiveSyncTool;
 import org.apache.hudi.utilities.HiveIncrementalPuller;
+import org.apache.hudi.utilities.IdentitySplitter;
 import org.apache.hudi.utilities.UtilHelpers;
 import org.apache.hudi.utilities.checkpointing.InitialCheckPointProvider;
 import org.apache.hudi.utilities.schema.SchemaProvider;
@@ -77,6 +77,7 @@ import java.util.concurrent.Executors;
  * write-to-sink (c) Schedule Compactions if needed (d) Conditionally Sync to Hive each cycle. For MOR table with
  * continuous mode enabled, a separate compactor thread is allocated to execute compactions
  */
+//用来做增量同步的，分为一次性模式 和 持久模式
 public class HoodieDeltaStreamer implements Serializable {
 
   private static final long serialVersionUID = 1L;
@@ -96,6 +97,7 @@ public class HoodieDeltaStreamer implements Serializable {
   public static final String DELTASYNC_POOL_NAME = "hoodiedeltasync";
 
   public HoodieDeltaStreamer(Config cfg, JavaSparkContext jssc) throws IOException {
+    //jssc.hadoopConfiguration() 可以从 jssc 获得，不需要重复传参
     this(cfg, jssc, FSUtils.getFs(cfg.targetBasePath, jssc.hadoopConfiguration()),
         jssc.hadoopConfiguration(), null);
   }
@@ -109,13 +111,17 @@ public class HoodieDeltaStreamer implements Serializable {
     this(cfg, jssc, fs, conf, null);
   }
 
+  //conf是hadoop的配置
   public HoodieDeltaStreamer(Config cfg, JavaSparkContext jssc, FileSystem fs, Configuration conf,
                              TypedProperties props) throws IOException {
     // Resolving the properties first in a consistent way
+    // 读取指定位置的配置，并且用--hoodie-conf覆盖配置文件的配置，也就是说--hoodie-conf的优先级最大
     this.properties = props != null ? props : UtilHelpers.readConfig(
         FSUtils.getFs(cfg.propsFilePath, jssc.hadoopConfiguration()),
         new Path(cfg.propsFilePath), cfg.configs).getConfig();
 
+    //initial checkpoint provider不是null，但是checkpoint是null
+    //反射新建一个checkpoint provider实例，并且获取改实例的checkpoint存到cfg
     if (cfg.initialCheckpointProvider != null && cfg.checkpoint == null) {
       InitialCheckPointProvider checkPointProvider =
           UtilHelpers.createInitialCheckpointProvider(cfg.initialCheckpointProvider, this.properties);
@@ -123,6 +129,8 @@ public class HoodieDeltaStreamer implements Serializable {
       cfg.checkpoint = checkPointProvider.getCheckpoint();
     }
     this.cfg = cfg;
+    //假如--run-bootstrap是true，那么新建一个BootstrapExecutor
+    //否则新建一个DeltaSyncService
     this.bootstrapExecutor = Option.ofNullable(
         cfg.runBootstrap ? new BootstrapExecutor(cfg, jssc, fs, conf, this.properties) : null);
     this.deltaSyncService = Option.ofNullable(
@@ -139,6 +147,7 @@ public class HoodieDeltaStreamer implements Serializable {
    * @throws Exception
    */
   public void sync() throws Exception {
+    //首先判断bootstrapExecutor是否存在，如果存在那么先做bootstrapExecutor的功能
     if (bootstrapExecutor.isPresent()) {
       LOG.info("Performing bootstrap. Source=" + bootstrapExecutor.get().getBootstrapConfig().getBootstrapSourceBasePath());
       bootstrapExecutor.get().execute();
@@ -404,7 +413,7 @@ public class HoodieDeltaStreamer implements Serializable {
               compactSchedulingMinShare, forceDisableCompaction, checkpoint,
               initialCheckpointProvider, help);
     }
-  
+
     @Override
     public String toString() {
       return "Config{"
@@ -450,9 +459,16 @@ public class HoodieDeltaStreamer implements Serializable {
     return cfg;
   }
 
+  //入口函数，噩梦开始的地方👿
   public static void main(String[] args) throws Exception {
+    //使用JCommander解析参数，参考：https://jcommander.org/
+    //cfg里面都是命令行传进来的参数
     final Config cfg = getConfig(args);
+    //size为1的map，只有一个配置项，如果是scala，可以用tuple代替🙂
+    //配置spark的调度优先级，返回spark的配置文件的地址 spark.scheduler.allocation.file ---> 文件地址
     Map<String, String> additionalSparkConfigs = SchedulerConfGenerator.getSparkSchedulingConfigs(cfg);
+    //构建spark的配置
+    //同事注册kryo的序列化类
     JavaSparkContext jssc =
         UtilHelpers.buildSparkContext("delta-streamer-" + cfg.targetTableName, cfg.sparkMaster, additionalSparkConfigs);
 
@@ -461,6 +477,7 @@ public class HoodieDeltaStreamer implements Serializable {
     }
 
     try {
+      //开始行动🐔
       new HoodieDeltaStreamer(cfg, jssc).sync();
     } finally {
       jssc.stop();

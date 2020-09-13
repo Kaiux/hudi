@@ -38,6 +38,10 @@ import java.util.Set;
  * specified in the files, with included files treated as if they are inline.
  *
  * Note: Not reusing commons-configuration since it has too many conflicting runtime deps.
+ *
+ * 其实就是用来读取文件中的配置，存到props里面
+ * 会缓存已读的文件，防止重复读文件
+ *
  */
 public class DFSPropertiesConfiguration {
 
@@ -106,6 +110,7 @@ public class DFSPropertiesConfiguration {
           continue;
         }
         String[] split = splitProperty(line);
+        //TODO 用if(split[0].equals("include"))更好一点
         if (line.startsWith("include=") || line.startsWith("include =")) {
           visitFile(new Path(rootFile.getParent(), split[1]));
         } else {

@@ -121,6 +121,7 @@ public class HoodieTableConfig implements Serializable {
     if (!fs.exists(metadataFolder)) {
       fs.mkdirs(metadataFolder);
     }
+    // 创建hoodie.properties文件, 并且写入hoodie table的配置
     Path propertyPath = new Path(metadataFolder, HOODIE_PROPERTIES_FILE);
     try (FSDataOutputStream outputStream = fs.create(propertyPath)) {
       if (!properties.containsKey(HOODIE_TABLE_NAME_PROP_NAME)) {

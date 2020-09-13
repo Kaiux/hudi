@@ -44,6 +44,7 @@ public class KafkaConnectHdfsProvider extends InitialCheckPointProvider {
     super(props);
   }
 
+  //就改了异常名，是否有更优雅的方式？
   @Override
   public void init(Configuration config) throws HoodieException {
     try {
@@ -57,6 +58,9 @@ public class KafkaConnectHdfsProvider extends InitialCheckPointProvider {
    * PathFilter for Kafka-Connect-HDFS.
    * Directory format: /partition1=xxx/partition2=xxx
    * File format: topic+partition+lowerOffset+upperOffset.file
+   *
+   * 完全可以设计成静态的，或者单例模式
+   *
    */
   public static class KafkaConnectPathFilter implements PathFilter {
     private static final Pattern DIRECTORY_PATTERN = Pattern.compile(".*=.*");
@@ -91,6 +95,7 @@ public class KafkaConnectHdfsProvider extends InitialCheckPointProvider {
     for (int i = 0; i < checkpoint.size(); ++i) {
       checkpointStr.append(",").append(i).append(":").append(checkpoint.get(i));
     }
+    //checkpoint-topic,0:10001,1:10002,2:10003
     return checkpointStr.toString();
   }
 
@@ -130,6 +135,7 @@ public class KafkaConnectHdfsProvider extends InitialCheckPointProvider {
     if (fileStatus.size() == 0) {
       throw new HoodieException("No valid Kafka Connect Hdfs file found under:" + this.path.getName());
     }
+    //从文件名中取出topic
     final String topic = fileStatus.get(0).getPath().getName().split(FILENAME_SEPARATOR)[0];
     int maxPartition = -1;
     final HashMap<Integer, Integer> checkpointMap = new HashMap<>();

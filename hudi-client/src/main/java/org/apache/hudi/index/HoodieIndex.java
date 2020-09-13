@@ -67,6 +67,7 @@ public abstract class HoodieIndex<T extends HoodieRecordPayload> implements Seri
       }
       return (HoodieIndex) instance;
     }
+    //不应该在父类中new子类，应该用工厂方法代替，写的很挫
     switch (config.getIndexType()) {
       case HBASE:
         return new HBaseIndex<>(config);
@@ -89,6 +90,7 @@ public abstract class HoodieIndex<T extends HoodieRecordPayload> implements Seri
    * Checks if the given [Keys] exists in the hoodie table and returns [Key, Option[partitionPath, fileID]] If the
    * optional is empty, then the key is not found.
    */
+  //TODO JavaSparkContext应该是一个全局的变量，不应该传来传去，应该由一个类统一管理，负责存取
   @PublicAPIMethod(maturity = ApiMaturityLevel.STABLE)
   public abstract JavaPairRDD<HoodieKey, Option<Pair<String, String>>> fetchRecordLocation(
       JavaRDD<HoodieKey> hoodieKeys, final JavaSparkContext jsc, HoodieTable<T> hoodieTable);

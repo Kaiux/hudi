@@ -18,7 +18,6 @@
 
 package org.apache.hudi.utilities;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hudi.AvroConversionUtils;
 import org.apache.hudi.client.HoodieWriteClient;
 import org.apache.hudi.client.WriteStatus;
@@ -42,6 +41,7 @@ import org.apache.hudi.utilities.transform.ChainedTransformer;
 import org.apache.hudi.utilities.transform.Transformer;
 
 import org.apache.avro.Schema;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -123,6 +123,7 @@ public class UtilHelpers {
   public static InitialCheckPointProvider createInitialCheckpointProvider(
       String className, TypedProperties props) throws IOException {
     try {
+      // 强转有点挫
       return (InitialCheckPointProvider) ReflectionUtils.loadClass(className, new Class<?>[] {TypedProperties.class}, props);
     } catch (Throwable e) {
       throw new IOException("Could not load initial checkpoint provider class " + className, e);
@@ -135,6 +136,12 @@ public class UtilHelpers {
   public static DFSPropertiesConfiguration readConfig(FileSystem fs, Path cfgPath, List<String> overriddenProps) {
     DFSPropertiesConfiguration conf;
     try {
+      //TODO 参数改成fs, cfgPath就可以了
+      //理论上来说，配置文件中的配置是hoodie的配置
+      //那么到这里，目前一共有三个配置：
+      //  1. 命令行传过来的配置
+      //  2. 生成的spark的配置(包含hadooop的配置)
+      //  3. 配置文件的配置
       conf = new DFSPropertiesConfiguration(cfgPath.getFileSystem(fs.getConf()), cfgPath);
     } catch (Exception e) {
       conf = new DFSPropertiesConfiguration();
@@ -142,6 +149,7 @@ public class UtilHelpers {
     }
 
     try {
+      // 用命令行的配置覆配置文件的配置
       if (!overriddenProps.isEmpty()) {
         LOG.info("Adding overridden properties to file properties.");
         conf.addProperties(new BufferedReader(new StringReader(String.join("\n", overriddenProps))));
@@ -207,6 +215,7 @@ public class UtilHelpers {
     sparkConf.set("spark.hadoop.mapred.output.compression.type", "BLOCK");
 
     additionalConfigs.forEach(sparkConf::set);
+    //这边调用HoodieWriteClient的目的是注册kryo的一些序列化类
     return HoodieWriteClient.registerClasses(sparkConf);
   }
 
