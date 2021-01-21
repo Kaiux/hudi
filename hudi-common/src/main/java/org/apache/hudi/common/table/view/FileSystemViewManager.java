@@ -48,6 +48,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * FileSystemViewManager is designed to encapsulate the file-system view storage from clients using the file-system
  * view. FileSystemViewManager uses a factory to construct specific implementation of file-system view and passes it to
  * clients for querying.
+ *
+ * 用工厂模式来构造file-system view去响应客户端的请求
+ *
  */
 public class FileSystemViewManager {
   private static final Logger LOG = LogManager.getLogger(FileSystemViewManager.class);

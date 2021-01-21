@@ -27,6 +27,8 @@ import java.io.Serializable;
 
 /**
  * A wrapped configuration which can be serialized.
+ *
+ * 包装了一下Configuration，使其可以写入到特定的输出流中
  */
 public class SerializableConfiguration implements Serializable {
 

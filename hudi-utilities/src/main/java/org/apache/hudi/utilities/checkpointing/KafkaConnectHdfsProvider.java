@@ -61,6 +61,8 @@ public class KafkaConnectHdfsProvider extends InitialCheckPointProvider {
    *
    * 完全可以设计成静态的，或者单例模式
    *
+   * 定义了文件和文件夹的格式
+   *
    */
   public static class KafkaConnectPathFilter implements PathFilter {
     private static final Pattern DIRECTORY_PATTERN = Pattern.compile(".*=.*");
@@ -87,6 +89,8 @@ public class KafkaConnectHdfsProvider extends InitialCheckPointProvider {
    * @param topic      Topic name
    * @param checkpoint Map with partition as key and max offset as value
    * @return Checkpoint string
+   *
+   * 格式是 topic,index:offset
    */
   private static String buildCheckpointStr(final String topic,
                                            final HashMap<Integer, Integer> checkpoint) {
@@ -101,6 +105,8 @@ public class KafkaConnectHdfsProvider extends InitialCheckPointProvider {
 
   /**
    * List file status recursively.
+   *
+   * 找出所有合法的文件状态，也就是符合上面的正则表达式的文件
    *
    * @param curPath Current Path
    * @param filter  PathFilter

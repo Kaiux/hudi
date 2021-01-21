@@ -71,12 +71,16 @@ public class HoodieTableMetaClient implements Serializable {
   private static final long serialVersionUID = 1L;
   private static final Logger LOG = LogManager.getLogger(HoodieTableMetaClient.class);
   public static final String METAFOLDER_NAME = ".hoodie";
+  // .hoodie/.temp
   public static final String TEMPFOLDER_NAME = METAFOLDER_NAME + File.separator + ".temp";
+  // .hoodie/.aux
   public static final String AUXILIARYFOLDER_NAME = METAFOLDER_NAME + File.separator + ".aux";
+  // .hoodie/.aux/.bootstrap
   public static final String BOOTSTRAP_INDEX_ROOT_FOLDER_PATH = AUXILIARYFOLDER_NAME + File.separator + ".bootstrap";
-
+  // .hoodie/.aux/.bootstrap/.partitions
   public static final String BOOTSTRAP_INDEX_BY_PARTITION_FOLDER_PATH = BOOTSTRAP_INDEX_ROOT_FOLDER_PATH
       + File.separator + ".partitions";
+  // .hoodie/.aux/.bootstrap/.fields
   public static final String BOOTSTRAP_INDEX_BY_FILE_ID_FOLDER_PATH = BOOTSTRAP_INDEX_ROOT_FOLDER_PATH + File.separator
       + ".fileids";
 
